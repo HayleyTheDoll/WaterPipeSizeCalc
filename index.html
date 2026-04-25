@@ -3,116 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Precision Pipe Sizing Calculator</title>
+    <title>Irrigation & Pipe Sizing Calculator</title>
     <style>
         :root { --primary: #2d6a4f; --bg: #f8fafc; --text: #1e293b; }
-        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 2rem; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        h1 { margin-top: 0; color: var(--primary); font-size: 1.5rem; border-bottom: 2px solid var(--bg); padding-bottom: 1rem; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 1.5rem; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-top: 8px solid var(--primary); }
+        h1 { margin-top: 0; color: var(--primary); font-size: 1.4rem; margin-bottom: 0.5rem; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-        .field { display: flex; flex-direction: column; }
-        label { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; }
-        input, select { padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; }
-        button { width: 100%; background: var(--primary); color: white; border: none; padding: 0.8rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 1rem; transition: opacity 0.2s; }
-        button:hover { opacity: 0.9; }
-        #results { margin-top: 2rem; padding: 1.5rem; border-radius: 8px; display: none; border-left: 5px solid var(--primary); }
-        .success { background: #f0fdf4; }
-        .error { background: #fef2f2; border-left-color: #ef4444; display: block !important; }
-        .res-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #e2e8f0; }
+        .field { display: flex; flex-direction: column; margin-bottom: 0.75rem; }
+        label { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: #475569; }
+        input, select { padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; background: white; }
+        button { width: 100%; background: var(--primary); color: white; border: none; padding: 0.9rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 1rem; transition: background 0.2s; }
+        button:hover { background: #1b4332; }
+        #results { margin-top: 1.5rem; padding: 1.25rem; border-radius: 8px; display: none; background: #f0fdf4; border: 1px solid #bbf7d0; }
+        .res-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #dcfce7; }
         .res-row:last-child { border-bottom: none; }
-        .formula-note { font-size: 0.75rem; color: #64748b; margin-top: 1rem; font-style: italic; }
+        .error { background: #fef2f2 !important; border-color: #fecaca !important; color: #991b1b; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Precision Pipe Sizing</h1>
-    <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem;">Professional grade Hazen-Williams analysis for residential systems.</p>
-
-    <div class="field" style="margin-bottom: 1rem;">
-        <label>Material (Smoothness Factor)</label>
-        <select id="material"></select>
+    <h1>Pipe Sizing & Pressure Loss Analysis</h1>
+    <h4>Based on the Hazen-Williams Formula</h4>
+    <div class="field">
+        <label>Pipe Material (C-Factor)</label>
+        <select id="material" onchange="updateCFactor()"></select>
     </div>
 
     <div class="grid">
         <div class="field">
-            <label>Length (ft)</label>
+            <label>Current C-Factor</label>
+            <input type="number" id="cVal" readonly style="background: #f1f5f9; color: #64748b;">
+        </div>
+        <div class="field">
+            <label>Pipe Length (Feet)</label>
             <input type="number" id="length" value="100">
         </div>
         <div class="field">
             <label>Flow Rate (GPM)</label>
-            <input type="number" id="flow" value="10" step="0.1">
+            <input type="number" id="flow" value="10" step="0.5">
         </div>
         <div class="field">
-            <label>Start PSI</label>
+            <label>Static Start PSI</label>
             <input type="number" id="startP" value="60">
         </div>
         <div class="field">
-            <label>Desired Min PSI</label>
+            <label>Min Required PSI (Output)</label>
             <input type="number" id="minP" value="40">
         </div>
         <div class="field">
-            <label>Max Velocity (ft/s)</label>
-            <input type="number" id="maxV" value="5">
+            <label>Max Velocity (FPS)</label>
+            <input type="number" id="maxV" value="10">
         </div>
     </div>
 
-    <button onclick="calculate()">Calculate Optimal Size</button>
+    <button onclick="calculate()">Calculate Recommended Size</button>
 
     <div id="results"></div>
-    <p class="formula-note">Using Equation: ΔP = 10.67 × L × Q<sup>1.852</sup> / (C<sup>1.852</sup> × d<sup>4.87</sup>) × 0.433</p>
 </div>
 
 <script>
 const pipeData = [
-    { type: "PEX / Poly (PEX-A)", c: 150, sizes: [
+    { type: "PEX-A / Poly Pipe", c: 150, sizes: [
         { id: 0.475, name: "1/2\" PEX" }, { id: 0.671, name: "3/4\" PEX" }, { id: 0.875, name: "1\" PEX" },
         { id: 1.135, name: "1-1/4\" PEX" }, { id: 1.328, name: "1-1/2\" PEX" }, { id: 1.623, name: "2\" PEX" }
     ]},
-    { type: "PVC SCH 40", c: 150, sizes: [
-        { id: 0.622, name: "1/2\" PVC SCH 40" }, { id: 0.824, name: "3/4\" PVC SCH 40" }, { id: 1.029, name: "1\" PVC SCH 40" },
-        { id: 1.360, name: "1-1/4\" PVC SCH 40" }, { id: 1.590, name: "1-1/2\" PVC SCH 40" }, { id: 2.047, name: "2\" PVC SCH 40" }
+    { type: "PVC Schedule 40", c: 150, sizes: [
+        { id: 0.622, name: "1/2\" PVC" }, { id: 0.824, name: "3/4\" PVC" }, { id: 1.029, name: "1\" PVC" },
+        { id: 1.360, name: "1.25\" PVC" }, { id: 1.590, name: "1.5\" PVC" }, { id: 2.047, name: "2\" PVC" }
     ]},
-    { type: "Copper (Type L)", c: 140, sizes: [
-        { id: 0.545, name: "1/2\" Copper L" }, { id: 0.785, name: "3/4\" Copper L" }, { id: 1.025, name: "1\" Copper L" },
-        { id: 1.265, name: "1-1/4\" Copper L" }, { id: 1.505, name: "1-1/2\" Copper L" }, { id: 1.939, name: "2\" Copper L" }
+    { type: "Copper Type L", c: 140, sizes: [
+        { id: 0.545, name: "1/2\" Copper" }, { id: 0.785, name: "3/4\" Copper" }, { id: 1.025, name: "1\" Copper" },
+        { id: 1.265, name: "1.25\" Copper" }, { id: 1.505, name: "1.5\" Copper" }, { id: 1.939, name: "2\" Copper" }
+    ]},
+    { type: "Galvanized Steel", c: 100, sizes: [
+        { id: 0.622, name: "1/2\" Steel" }, { id: 0.824, name: "3/4\" Steel" }, { id: 1.049, name: "1\" Steel" },
+        { id: 2.067, name: "2\" Steel" }
     ]}
 ];
 
-const select = document.getElementById('material');
-pipeData.forEach((m, idx) => {
+const selectEl = document.getElementById('material');
+pipeData.forEach((item, index) => {
     let opt = document.createElement('option');
-    opt.value = idx;
-    opt.innerHTML = `${m.type} (C=${m.c})`;
-    select.appendChild(opt);
+    opt.value = index;
+    opt.textContent = item.type;
+    selectEl.appendChild(opt);
 });
 
+function updateCFactor() {
+    const material = pipeData[selectEl.value];
+    document.getElementById('cVal').value = material.c;
+}
+
+updateCFactor();
+
 function calculate() {
-    const material = pipeData[document.getElementById('material').value];
+    const material = pipeData[selectEl.value];
     const L = parseFloat(document.getElementById('length').value);
     const Q = parseFloat(document.getElementById('flow').value);
     const startP = parseFloat(document.getElementById('startP').value);
     const minP = parseFloat(document.getElementById('minP').value);
     const maxV = parseFloat(document.getElementById('maxV').value);
+    const C = material.c;
     
     const resDiv = document.getElementById('results');
+    resDiv.className = ""; 
     let found = null;
 
     for (let pipe of material.sizes) {
-        // Velocity (fps) = (0.4085 * GPM) / ID^2
-        let velocity = (0.4085 * Q) / Math.pow(pipe.id, 2);
+        let vel = (0.4085 * Q) / Math.pow(pipe.id, 2);
         
-        if (velocity <= maxV) {
-            // Precision Hazen-Williams Head Loss (ft)
-            let headLossFt = (10.67 * L * Math.pow(Q, 1.852)) / (Math.pow(material.c, 1.852) * Math.pow(pipe.id, 4.87));
-            
-            // Convert ft to PSI (1 ft = 0.433 PSI)
-            let lossPsi = headLossFt * 0.433;
-            let endP = startP - lossPsi;
+        if (vel <= maxV) {
+            let headLoss = (10.67 * L * Math.pow(Q, 1.852)) / (Math.pow(C, 1.852) * Math.pow(pipe.id, 4.87));
+            let psiLoss = headLoss * 0.433;
+            let finalP = startP - psiLoss;
 
-            if (endP >= minP) {
-                found = { ...pipe, velocity, lossPsi, endP };
-                break; 
+            if (finalP >= minP) {
+                found = { ...pipe, vel, psiLoss, finalP };
+                break;
             }
         }
     }
+
+    resDiv.style.display = "block";
+    if (found) {
+        resDiv.innerHTML = `
+            <strong style="color:var(--primary);">Recommended Size: ${found.name}</strong>
+            <div class="res-row"><span>Velocity:</span> <span>${found.vel.toFixed(2)} ft/s</span></div>
+            <div class="res-row"><span>Pressure Loss:</span> <span>${found.psiLoss.toFixed(2)} PSI</span></div>
+            <div class="res-row"><span>Outlet Pressure:</span> <span>${found.finalP.toFixed(2)} PSI</span></div>
+        `;
+    } else {
+        resDiv.classList.add("error");
+        resDiv.innerHTML = "<strong>Error:</strong> No pipe size found that keeps velocity under " + maxV + " FPS and satisfies the " + minP + " PSI minimum requirement.";
+    }
+}
+</script>
+</body>
+</html>
