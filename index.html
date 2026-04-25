@@ -24,8 +24,8 @@
 <body>
 
 <div class="container">
-    <h1>Pipe Sizing & Pressure Loss Analysis</h1>
-    <h4>Based on the Hazen-Williams Formula</h4>
+    <h1>Water Pipe Sizing & Pressure Loss Calculator</h1>
+    <h4>Based on the Hazen-Williams Formula. Ideal for residential plumbing and irrigation systems.</h4>
     <div class="field">
         <label>Pipe Material (C-Factor)</label>
         <select id="material" onchange="updateCFactor()"></select>
@@ -61,8 +61,10 @@
     <button onclick="calculate()">Calculate Recommended Size</button>
 
     <div id="results"></div>
-</div>
+     
 Disclaimer: This Pipe Sizing & Pressure Loss Calculator is a mathematical model provided for reference only. It is intended for preliminary analysis and design assistance. It is not a substitute for the professional judgment of a licensed engineer or contractor.
+</div>
+
 
 <script>
 const pipeData = [
