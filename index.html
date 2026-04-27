@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Water Pipe Sizing Calculator</title>
-    <style>
+    <style>current
         :root { --primary: #2d6a4f; --bg: #f8fafc; --text: #1e293b; }
         body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 1.5rem; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-top: 8px solid var(--primary); }
@@ -20,6 +20,7 @@
         .res-row:last-child { border-bottom: none; }
         .error { background: #fef2f2 !important; border-color: #fecaca !important; color: #991b1b; }
         .hint { font-size: 0.75rem; color: #64748b; font-weight: normal; }
+        .section-title { border-bottom: 1px solid #e2e8f0; margin: 1.5rem 0 1rem; padding-bottom: 0.25rem; font-size: 0.9rem; color: var(--primary); font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; }
     </style>
 </head>
 <body>
@@ -35,16 +36,19 @@
 
     <div class="grid">
         <div class="field">
-            <label>Current C-Factor</label>
-            <input type="number" id="cVal" readonly style="background: #f1f5f9; color: #64748b;">
+        </div>
+        <div>
         </div>
         <div class="field">
-            <label>Pipe Length (Feet)</label>
+            <label>Pipe Length (Feet) </label>
             <input type="number" id="length" value="100">
         </div>
+        
         <div class="field">
-            <label>Elevation Change (Feet) <br><span class="hint">(+ for Uphill, - for Downhill)</span></label>
+            <label>Elevation Change (Feet) <br>
+            
             <input type="number" id="elevation" value="0">
+            <span class="hint">(+ for Uphill, - for Downhill)</span></label>
         </div>
         <div class="field">
             <label>Flow Rate (GPM)</label>
@@ -64,12 +68,32 @@
         </div>
     </div>
 
+    <div class="section-title">Fittings (Equivalent Length)</div>
+    <div class="grid">
+        <div class="field">
+            <label>45° Elbows (Qty)</label>
+            <input type="number" id="elbow45" value="0">
+        </div>
+        <div class="field">
+            <label>90° Elbows (Qty)</label>
+            <input type="number" id="elbow90" value="0">
+        </div>
+        <div class="field">
+            <label>Tee - Side Branch (Qty)</label>
+            <input type="number" id="teeSide" value="0">
+        </div>
+        <div class="field">
+            <label>Tee - Straight (Qty)</label>
+            <input type="number" id="teeStraight" value="0">
+        </div>
+    </div>
+
     <button onclick="calculate()">Calculate Recommended Size</button>
 
     <div id="results"></div>
      
     <p style="font-size: 0.7rem; margin-top: 20px; color: #64748b;">
-    Disclaimer: This tool is a mathematical model based on the Hazen-Williams Formula and is for preliminary analysis only. Elevation loss is calculated at 0.433 PSI per foot.
+    Disclaimer: This tool is a mathematical model based on the Hazen-Williams Formula and does not replace a licensed professional. Equivalent lengths for fittings are estimated based on standard nominal pipe diameters.
     </p>
 </div>
 
@@ -99,10 +123,6 @@ const pipeData = [
         { id: 0.622, name: "1/2\" Steel" }, { id: 0.824, name: "3/4\" Steel" }, { id: 1.049, name: "1\" Steel" },
         { id: 1.660, name: "1 1/4\" Steel" }, { id: 1.900, name: "1 1/2\" Steel" }, { id: 2.067, name: "2\" Steel" }
     ]},
-    { type: "Drip Tube (Polyethylene)", c: 140, sizes: [ 
-        { id: 0.170, name: "1/4\" Micro-Tubing" }, { id: 0.600, name: "1/2\" Poly Tubing" }, 
-        { id: 0.820, name: "3/4\" Poly Tubing" }, { id: 1.050, name: "1\" Poly Tubing" } 
-    ]},
 ];
 
 const selectEl = document.getElementById('material');
@@ -129,22 +149,34 @@ function calculate() {
     const minP = parseFloat(document.getElementById('minP').value);
     const maxV = parseFloat(document.getElementById('maxV').value);
     const C = material.c;
+
+    // Fitting Quantities
+    const q45 = parseFloat(document.getElementById('elbow45').value) || 0;
+    const q90 = parseFloat(document.getElementById('elbow90').value) || 0;
+    const qSide = parseFloat(document.getElementById('teeSide').value) || 0;
+    const qStraight = parseFloat(document.getElementById('teeStraight').value) || 0;
     
     const resDiv = document.getElementById('results');
     resDiv.className = ""; 
     let found = null;
 
-    // Elevation PSI change: gain height = lose pressure. 
-    // 1 foot vertical = 0.433 PSI
     const elevPsiAdjustment = elevChange * 0.433;
 
     for (let pipe of material.sizes) {
-        // Velocity (FPS) = (0.4085 * GPM) / d^2
         let vel = (0.4085 * Q) / Math.pow(pipe.id, 2);
         
         if (vel <= maxV) {
-            // Friction Head Loss (Feet) using Hazen-Williams
-            let frictionHeadLoss = (10.67 * L * Math.pow(Q, 1.852)) / (Math.pow(C, 1.852) * Math.pow(pipe.id, 4.87));
+            // Equivalent lengths based on pipe ID (rough estimates for L/D ratios)
+            // Elbow 90: ~30D, Elbow 45: ~16D, Tee Branch: ~60D, Tee Straight: ~20D
+            // Calculated in feet: (Ratio * Diameter_in_inches / 12)
+            let eqL = (q90 * 30 * pipe.id / 12) + 
+                      (q45 * 16 * pipe.id / 12) + 
+                      (qSide * 60 * pipe.id / 12) + 
+                      (qStraight * 20 * pipe.id / 12);
+
+            let totalEffectiveLength = L + eqL;
+
+            let frictionHeadLoss = (10.67 * totalEffectiveLength * Math.pow(Q, 1.852)) / (Math.pow(C, 1.852) * Math.pow(pipe.id, 4.87));
             let frictionPsiLoss = frictionHeadLoss * 0.433;
             
             let totalPsiLoss = frictionPsiLoss + elevPsiAdjustment;
@@ -157,7 +189,8 @@ function calculate() {
                     frictionPsiLoss, 
                     elevPsiAdjustment, 
                     totalPsiLoss, 
-                    finalP 
+                    finalP,
+                    eqL
                 };
                 break;
             }
@@ -170,6 +203,7 @@ function calculate() {
         resDiv.innerHTML = `
             <strong style="color:var(--primary); font-size:1.1rem;">Recommended Size: ${found.name}</strong>
             <div class="res-row"><span>Velocity:</span> <span>${found.vel.toFixed(2)} ft/s</span></div>
+            <div class="res-row"><span>Fitting Equivalent Length:</span> <span>+ ${found.eqL.toFixed(1)} ft</span></div>
             <div class="res-row"><span>Friction Loss:</span> <span>${found.frictionPsiLoss.toFixed(2)} PSI</span></div>
             <div class="res-row"><span>Elevation ${elevText}:</span> <span>${Math.abs(found.elevPsiAdjustment).toFixed(2)} PSI</span></div>
             <div class="res-row" style="border-top: 1px solid #aaa; font-weight:bold;"><span>Outlet Pressure:</span> <span>${found.finalP.toFixed(2)} PSI</span></div>
