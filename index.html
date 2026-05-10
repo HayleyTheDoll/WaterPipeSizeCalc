@@ -4,22 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Water Pipe Sizing Calculator</title>
-    <style>current
+    <style>
         :root { --primary: #2d6a4f; --bg: #f8fafc; --text: #1e293b; }
         body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 1.5rem; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-top: 8px solid var(--primary); }
-        h1 { margin-top: 0; color: var(--primary); font-size: 1.4rem; margin-bottom: 0.5rem; }
+        h1 { margin-top: 0; color: var(--primary); font-size: 1.4rem; margin-bottom: 0.25rem; }
+        h4 { margin-top: 0; font-weight: normal; color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
         .field { display: flex; flex-direction: column; margin-bottom: 0.75rem; }
         label { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: #475569; }
-        input, select { padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; background: white; }
+        input, select { padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; background: white; width: 100%; box-sizing: border-box; }
         button { width: 100%; background:#1b4332; color: white; border: none; padding: 0.9rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 1rem; transition: background 0.2s; }
         button:hover { background: #225540; }
         #results { margin-top: 1.5rem; padding: 1.25rem; border-radius: 8px; display: none; background: #f0fdf4; border: 1px solid #bbf7d0; }
         .res-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #dcfce7; }
         .res-row:last-child { border-bottom: none; }
         .error { background: #fef2f2 !important; border-color: #fecaca !important; color: #991b1b; }
-        .hint { font-size: 0.75rem; color: #64748b; font-weight: normal; }
+        .hint { font-size: 0.75rem; color: #64748b; font-weight: normal; display: block; margin-top: 2px; }
         .section-title { border-bottom: 1px solid #e2e8f0; margin: 1.5rem 0 1rem; padding-bottom: 0.25rem; font-size: 0.9rem; color: var(--primary); font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; }
     </style>
 </head>
@@ -29,39 +30,44 @@
     <h1>Water Pipe Sizing & Pressure Loss Calculator</h1>
     <h4>Ideal For Residential Plumbing and Irrigation Systems.</h4>
     
-    <div class="field">
-        <label>Pipe Material (C-Factor)</label>
-        <select id="material" onchange="updateCFactor()"></select>
+    <div class="grid">
+        <div class="field">
+            <label>Pipe Material</label>
+            <select id="material" onchange="updateCFactor()"></select>
+        </div>
+        <div class="field">
+            <label>C-Factor</label>
+            <input type="number" id="cVal" readonly style="background: #f1f5f9;">
+        </div>
     </div>
 
     <div class="grid">
         <div class="field">
-        </div>
-        <div>
-        </div>
-        <div class="field">
-            <label>Pipe Length (Feet) </label>
+            <label>Pipe Length (Feet)</label>
             <input type="number" id="length" value="100">
         </div>
         
         <div class="field">
-            <label>Elevation Change (Feet) <br>
-            
+            <label>Elevation Change (Feet)</label>
             <input type="number" id="elevation" value="0">
-            <span class="hint">(+ for Uphill, - for Downhill)</span></label>
+            <span class="hint">(+ Uphill, - Downhill)</span>
         </div>
+
         <div class="field">
             <label>Flow Rate (GPM)</label>
             <input type="number" id="flow" value="10" step="0.5">
         </div>
+
         <div class="field">
             <label>Static Start PSI</label>
             <input type="number" id="startP" value="60">
         </div>
+
         <div class="field">
             <label>Min Required PSI (Output)</label>
             <input type="number" id="minP" value="40">
         </div>
+
         <div class="field">
             <label>Max Velocity (FPS)</label>
             <input type="number" id="maxV" value="10">
@@ -150,7 +156,6 @@ function calculate() {
     const maxV = parseFloat(document.getElementById('maxV').value);
     const C = material.c;
 
-    // Fitting Quantities
     const q45 = parseFloat(document.getElementById('elbow45').value) || 0;
     const q90 = parseFloat(document.getElementById('elbow90').value) || 0;
     const qSide = parseFloat(document.getElementById('teeSide').value) || 0;
@@ -166,19 +171,14 @@ function calculate() {
         let vel = (0.4085 * Q) / Math.pow(pipe.id, 2);
         
         if (vel <= maxV) {
-            // Equivalent lengths based on pipe ID (rough estimates for L/D ratios)
-            // Elbow 90: ~30D, Elbow 45: ~16D, Tee Branch: ~60D, Tee Straight: ~20D
-            // Calculated in feet: (Ratio * Diameter_in_inches / 12)
             let eqL = (q90 * 30 * pipe.id / 12) + 
                       (q45 * 16 * pipe.id / 12) + 
                       (qSide * 60 * pipe.id / 12) + 
                       (qStraight * 20 * pipe.id / 12);
 
             let totalEffectiveLength = L + eqL;
-
             let frictionHeadLoss = (10.67 * totalEffectiveLength * Math.pow(Q, 1.852)) / (Math.pow(C, 1.852) * Math.pow(pipe.id, 4.87));
             let frictionPsiLoss = frictionHeadLoss * 0.433;
-            
             let totalPsiLoss = frictionPsiLoss + elevPsiAdjustment;
             let finalP = startP - totalPsiLoss;
 
@@ -206,7 +206,7 @@ function calculate() {
             <div class="res-row"><span>Fitting Equivalent Length:</span> <span>+ ${found.eqL.toFixed(1)} ft</span></div>
             <div class="res-row"><span>Friction Loss:</span> <span>${found.frictionPsiLoss.toFixed(2)} PSI</span></div>
             <div class="res-row"><span>Elevation ${elevText}:</span> <span>${Math.abs(found.elevPsiAdjustment).toFixed(2)} PSI</span></div>
-            <div class="res-row" style="border-top: 1px solid #aaa; font-weight:bold;"><span>Outlet Pressure:</span> <span>${found.finalP.toFixed(2)} PSI</span></div>
+            <div class="res-row" style="border-top: 1px solid #aaa; font-weight:bold; margin-top:5px; padding-top:8px;"><span>Outlet Pressure:</span> <span>${found.finalP.toFixed(2)} PSI</span></div>
         `;
     } else {
         resDiv.classList.add("error");
