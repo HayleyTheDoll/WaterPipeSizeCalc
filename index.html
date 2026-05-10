@@ -6,15 +6,15 @@
     <title>Water Pipe Sizing Calculator</title>
     <style>
         :root { --primary: #2d6a4f; --bg: #f8fafc; --text: #1e293b; }
-        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 1.5rem; }
+        body { font-family: Arial, Helvetica, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 1.5rem; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-top: 8px solid var(--primary); }
         h1 { margin-top: 0; color: var(--primary); font-size: 1.4rem; margin-bottom: 0.25rem; }
         h4 { margin-top: 0; font-weight: normal; color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
         .field { display: flex; flex-direction: column; margin-bottom: 0.75rem; }
         label { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: #475569; }
-        input, select { padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; background: white; width: 100%; box-sizing: border-box; }
-        button { width: 100%; background:#1b4332; color: white; border: none; padding: 0.9rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 1rem; transition: background 0.2s; }
+        input, select { padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; background: white; width: 100%; box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
+        button { width: 100%; background:#1b4332; color: white; border: none; padding: 0.9rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 1rem; transition: background 0.2s; font-family: Arial, Helvetica, sans-serif; }
         button:hover { background: #225540; }
         #results { margin-top: 1.5rem; padding: 1.25rem; border-radius: 8px; display: none; background: #f0fdf4; border: 1px solid #bbf7d0; }
         .res-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #dcfce7; }
@@ -44,33 +44,33 @@
     <div class="grid">
         <div class="field">
             <label>Pipe Length (Feet)</label>
-            <input type="number" id="length" value="100">
+            <input type="number" id="length" placeholder="e.g. 100">
         </div>
         
         <div class="field">
             <label>Elevation Change (Feet)</label>
-            <input type="number" id="elevation" value="0">
+            <input type="number" id="elevation" placeholder="0">
             <span class="hint">(+ Uphill, - Downhill)</span>
         </div>
 
         <div class="field">
             <label>Flow Rate (GPM)</label>
-            <input type="number" id="flow" value="10" step="0.5">
+            <input type="number" id="flow" step="0.5" placeholder="e.g. 10">
         </div>
 
         <div class="field">
             <label>Static Start PSI</label>
-            <input type="number" id="startP" value="60">
+            <input type="number" id="startP" placeholder="e.g. 60">
         </div>
 
         <div class="field">
             <label>Min Required PSI (Output)</label>
-            <input type="number" id="minP" value="40">
+            <input type="number" id="minP" placeholder="e.g. 40">
         </div>
 
         <div class="field">
             <label>Max Velocity (FPS)</label>
-            <input type="number" id="maxV" value="10">
+            <input type="number" id="maxV" placeholder="e.g. 10">
         </div>
     </div>
 
@@ -78,19 +78,19 @@
     <div class="grid">
         <div class="field">
             <label>45° Elbows (Qty)</label>
-            <input type="number" id="elbow45" value="0">
+            <input type="number" id="elbow45" placeholder="0">
         </div>
         <div class="field">
             <label>90° Elbows (Qty)</label>
-            <input type="number" id="elbow90" value="0">
+            <input type="number" id="elbow90" placeholder="0">
         </div>
         <div class="field">
             <label>Tee - Side Branch (Qty)</label>
-            <input type="number" id="teeSide" value="0">
+            <input type="number" id="teeSide" placeholder="0">
         </div>
         <div class="field">
             <label>Tee - Straight (Qty)</label>
-            <input type="number" id="teeStraight" value="0">
+            <input type="number" id="teeStraight" placeholder="0">
         </div>
     </div>
 
@@ -148,12 +148,12 @@ updateCFactor();
 
 function calculate() {
     const material = pipeData[selectEl.value];
-    const L = parseFloat(document.getElementById('length').value);
+    const L = parseFloat(document.getElementById('length').value) || 0;
     const elevChange = parseFloat(document.getElementById('elevation').value) || 0;
-    const Q = parseFloat(document.getElementById('flow').value);
-    const startP = parseFloat(document.getElementById('startP').value);
-    const minP = parseFloat(document.getElementById('minP').value);
-    const maxV = parseFloat(document.getElementById('maxV').value);
+    const Q = parseFloat(document.getElementById('flow').value) || 0;
+    const startP = parseFloat(document.getElementById('startP').value) || 0;
+    const minP = parseFloat(document.getElementById('minP').value) || 0;
+    const maxV = parseFloat(document.getElementById('maxV').value) || 0;
     const C = material.c;
 
     const q45 = parseFloat(document.getElementById('elbow45').value) || 0;
@@ -164,6 +164,13 @@ function calculate() {
     const resDiv = document.getElementById('results');
     resDiv.className = ""; 
     let found = null;
+
+    if (L <= 0 || Q <= 0 || startP <= 0) {
+        resDiv.style.display = "block";
+        resDiv.classList.add("error");
+        resDiv.innerHTML = "<strong>Error:</strong> Please enter valid values for Length, Flow Rate, and Start Pressure.";
+        return;
+    }
 
     const elevPsiAdjustment = elevChange * 0.433;
 
